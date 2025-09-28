@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDFTextify - Convert PDF to Searchable Text</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-hover: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-hover: #334155;
+        --text-primary: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-muted: #64748b;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --border: #334155;
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      margin: auto;
+    }
+
+    .card {
+      background-color: var(--bg-secondary);
+      border-radius: 1rem;
+      padding: 2.5rem;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      border-radius: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .logo svg {
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      font-size: 0.938rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .upload-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: block;
+      width: 100%;
+      padding: 2rem;
+      border: 2px dashed var(--border);
+      border-radius: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: var(--bg-primary);
+    }
+
+    .file-input-wrapper:hover {
+      border-color: var(--accent);
+      background-color: var(--bg-hover);
+    }
+
+    .file-input-wrapper.active {
+      border-color: var(--accent);
+      background-color: var(--bg-hover);
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    .upload-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 1rem;
+      color: var(--text-muted);
+    }
+
+    .upload-text {
+      font-size: 0.938rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    .upload-text strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .upload-hint {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+    }
+
+    .file-name {
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background-color: var(--bg-primary);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+      display: none;
+    }
+
+    .file-name.show {
+      display: block;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+      background-color: var(--accent);
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+
+    .btn:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      text-align: center;
+      display: none;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.processing {
+      background-color: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .status.processing {
+        background-color: #1e3a8a;
+        color: #bfdbfe;
+        border: 1px solid #1e40af;
+      }
+    }
+
+    .status.success {
+      background-color: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .status.success {
+        background-color: #14532d;
+        color: #bbf7d0;
+        border: 1px solid #166534;
+      }
+    }
+
+    .status.error {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .status.error {
+        background-color: #7f1d1d;
+        color: #fecaca;
+        border: 1px solid #991b1b;
+      }
+    }
+
+    .features {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .feature-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .footer {
+      margin-top: 3rem;
+      text-align: center;
+    }
+
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .social-links a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 0.5rem;
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .social-links a:hover {
+      background-color: var(--bg-hover);
+      color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .social-links svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .copyright {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.6s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        padding: 2rem 1.5rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="logo">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h1>PDFTextify</h1>
+        <p class="subtitle">Convert PDF to searchable, text-extractable format</p>
+      </div>
+
+      <div class="upload-section">
+        <label class="file-input-wrapper" for="fileInput">
+          <input type="file" id="fileInput" accept="application/pdf">
+          <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p class="upload-text"><strong>Choose a PDF file</strong> or drag it here</p>
+          <p class="upload-hint">Maximum file size: 50MB</p>
+        </label>
+        <div class="file-name" id="fileName"></div>
+      </div>
+
+      <button class="btn" id="processBtn" onclick="uploadFile()">
+        Process PDF
+      </button>
+
+      <div class="status" id="status"></div>
+
+      <div class="features">
+        <div class="feature-list">
+          <div class="feature-item">
+            <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Indonesian & English OCR support</span>
+          </div>
+          <div class="feature-item">
+            <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Auto rotation & deskew correction</span>
+          </div>
+          <div class="feature-item">
+            <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>High-quality 300 DPI processing</span>
+          </div>
+          <div class="feature-item">
+            <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>PDF/A-2 archival format output</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="social-links">
+        <a href="https://github.com/imrosyd/PDFTextify" target="_blank" rel="noopener noreferrer" title="GitHub">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.41 7.86 10.94.58.11.79-.25.79-.55v-2.15c-3.2.7-3.88-1.54-3.88-1.54-.53-1.36-1.3-1.72-1.3-1.72-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.2 1.78 1.2 1.04 1.77 2.73 1.26 3.39.96.1-.75.41-1.26.74-1.55-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.06 11.06 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.11 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.68.42.36.8 1.07.8 2.15v3.18c0 .3.2.66.8.55A10.52 10.52 0 0 0 23.5 12C23.5 5.74 18.27.5 12 .5Z"/>
+          </svg>
+        </a>
+        <a href="https://www.linkedin.com/in/imrosyd" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.45 20.45h-3.55v-5.4c0-1.29-.02-2.95-1.8-2.95-1.81 0-2.09 1.42-2.09 2.87v5.48h-3.55V9h3.41v1.56h.05c.47-.89 1.62-1.82 3.33-1.82 3.56 0 4.21 2.34 4.21 5.39v6.32zM5.34 7.43a2.06 2.06 0 1 1 0-4.11 2.06 2.06 0 0 1 0 4.11zm1.78 13.02H3.55V9h3.57v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.21 0 22.23 0z"/>
+          </svg>
+        </a>
+        <a href="https://www.instagram.com/imrosyd" target="_blank" rel="noopener noreferrer" title="Instagram">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9zm4.5 3.25a5.25 5.25 0 1 1 0 10.5 5.25 5.25 0 0 1 0-10.5zm0 2a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 0 0 0-6.5zm5.75-.88a1.13 1.13 0 1 1-2.25 0 1.13 1.13 0 0 1 2.25 0z"/>
+          </svg>
+        </a>
+      </div>
+      <p class="copyright">&copy; 2025 PDFTextify. All rights reserved.</p>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDisplay = document.getElementById('fileName');
+    const fileWrapper = document.querySelector('.file-input-wrapper');
+    const processBtn = document.getElementById('processBtn');
+    const statusDiv = document.getElementById('status');
+
+    fileInput.addEventListener('change', function() {
+      if (this.files.length > 0) {
+        const fileName = this.files[0].name;
+        fileNameDisplay.textContent = fileName;
+        fileNameDisplay.classList.add('show');
+        fileWrapper.classList.add('active');
+      } else {
+        fileNameDisplay.textContent = '';
+        fileNameDisplay.classList.remove('show');
+        fileWrapper.classList.remove('active');
+      }
+    });
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      fileWrapper.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      fileWrapper.addEventListener(eventName, () => {
+        fileWrapper.classList.add('active');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      fileWrapper.addEventListener(eventName, () => {
+        fileWrapper.classList.remove('active');
+      }, false);
+    });
+
+    fileWrapper.addEventListener('drop', function(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      fileInput.files = files;
+
+      if (files.length > 0) {
+        const fileName = files[0].name;
+        fileNameDisplay.textContent = fileName;
+        fileNameDisplay.classList.add('show');
+      }
+    }, false);
+
+    async function uploadFile() {
+      if (!fileInput.files.length) {
+        showStatus('Please select a PDF file first', 'error');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const maxSize = 50 * 1024 * 1024;
+
+      if (file.size > maxSize) {
+        showStatus('File size exceeds 50MB limit', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      processBtn.disabled = true;
+      processBtn.innerHTML = '<span class="spinner"></span>Processing...';
+      showStatus('Processing your PDF... This may take a few moments', 'processing');
+
+      try {
+        const response = await fetch('/ocrpdf/', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || 'Failed to process PDF');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name.replace(/\.pdf$/i, '.pdf');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showStatus('Success! Your processed PDF has been downloaded', 'success');
+
+        setTimeout(() => {
+          fileInput.value = '';
+          fileNameDisplay.textContent = '';
+          fileNameDisplay.classList.remove('show');
+          fileWrapper.classList.remove('active');
+          statusDiv.classList.remove('show');
+        }, 3000);
+
+      } catch (error) {
+        showStatus('Error: ' + error.message, 'error');
+      } finally {
+        processBtn.disabled = false;
+        processBtn.innerHTML = 'Process PDF';
+      }
+    }
+
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = 'status show ' + type;
+    }
+  </script>
+</body>
+</html>
