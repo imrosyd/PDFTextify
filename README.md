@@ -50,8 +50,8 @@ PDFTextify is a **modern OCR service** that transforms your scanned PDFs into fu
 
 ### 1️⃣ Clone & Navigate
 ```bash
-git clone https://github.com/imrosyd/PDFTextify.git
-cd PDFTextify
+git clone https://github.com/imrosyd/pdftextify.git
+cd pdftextify
 ```
 
 ### 2️⃣ Install Dependencies
@@ -171,10 +171,10 @@ pdftextify/
 We welcome contributions! Here's how you can help:
 
 ### 🐛 Bug Reports
-Found a bug? [Open an issue](https://github.com/imrosyd/PDFTextify/issues) with a clear description, steps to reproduce, and environment details.
+Found a bug? [Open an issue](https://github.com/imrosyd/pdftextify/issues) with a clear description, steps to reproduce, and environment details.
 
 ### 💡 Feature Requests
-Have an idea? [Start a discussion](https://github.com/imrosyd/PDFTextify/discussions) or [open an issue](https://github.com/imrosyd/PDFTextify/issues).
+Have an idea? [Start a discussion](https://github.com/imrosyd/pdftextify/discussions) or [open an issue](https://github.com/imrosyd/pdftextify/issues).
 
 ### 🔧 Development
 1. 🍴 Fork the repository
