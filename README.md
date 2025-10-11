@@ -1,21 +1,10 @@
-<div align="center">
-
 # 📄 PDFTextify
 
 ### ✨ Transform Your PDFs into Searchable, Text-Extractable Documents ✨
 
 *A powerful, fast, and elegant OCR service built with FastAPI*
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/Python-3.7+-green.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-00a393.svg)](https://fastapi.tiangolo.com)
-[![OCR](https://img.shields.io/badge/OCR-Tesseract-orange.svg)](https://github.com/tesseract-ocr/tesseract)
-
-[🚀 Quick Start](#-quick-start) • [📖 Features](#-features) • [🛠️ Installation](#%EF%B8%8F-installation) • [💡 Usage](#-usage) • [🤝 Contributing](#-contributing)
-
 ---
-
-</div>
 
 ## 🎯 What is PDFTextify?
 
@@ -49,15 +38,15 @@ PDFTextify is a **modern OCR service** that transforms your scanned PDFs into fu
 - 🛡️ **Secure** - Input validation & error handling
 - 📱 **Responsive** - Works on all devices
 - 🌙 **Dark Mode** - Automatic theme switching
-- 🔧 **Easy Deploy** - Single script startup
+- 🔧 **Easy Deploy** - Systemd service support
 
 </td>
 </tr>
 </table>
 
-## 🚀 Quick Start
+---
 
-Get PDFTextify running in **3 simple steps**:
+## 🛠️ Installation
 
 ### 1️⃣ Clone & Navigate
 ```bash
@@ -74,43 +63,60 @@ sudo apt-get update && sudo apt-get install -y ocrmypdf tesseract-ocr tesseract-
 pip install -r requirements.txt
 ```
 
-### 3️⃣ Launch
+### 3️⃣ Run for Development
 ```bash
-./start-pdftextify.sh
+uvicorn app:app --host 0.0.0.0 --port 1100
+```
+🎉 **That's it!** Open http://localhost:1100 in your browser. For production, see the [Deployment](#-deployment) section.
+
+---
+
+## 🚀 Deployment
+
+### Using systemd (Recommended on Linux)
+
+To run the application as a systemd service, create a file named `pdftextify.service` in `/etc/systemd/system/` with the following content.
+
+**Important:** You must replace `your_user` and `your_group` with your actual username and group, and ensure the `WorkingDirectory` and `ExecStart` paths are correct for your environment.
+
+```ini
+[Unit]
+Description=PDFTextify Service
+After=network.target
+
+[Service]
+User=your_user
+Group=your_group
+WorkingDirectory=/path/to/your/pdftextify_project
+ExecStart=/path/to/your/venv/bin/uvicorn app:app --host 0.0.0.0 --port 1100
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-🎉 **That's it!** Open http://localhost:1100 in your browser
+After creating the file, run the following commands:
 
-## 🛠️ Installation
-
-<details>
-<summary><b>📋 System Requirements</b></summary>
-
-- **Python** 3.7 or higher
-- **OCRmyPDF** - PDF processing engine
-- **Tesseract OCR** - Text recognition engine
-- **2GB RAM** minimum (4GB recommended)
-- **1GB** free disk space
-
-</details>
-
-### Ubuntu/Debian
 ```bash
-sudo apt-get update
-sudo apt-get install ocrmypdf tesseract-ocr tesseract-ocr-ind tesseract-ocr-eng
-pip install -r requirements.txt
+sudo systemctl daemon-reload
+sudo systemctl enable --now pdftextify.service
 ```
 
-### macOS
+#### Manage the Service:
+- **Check Status:** `sudo systemctl status pdftextify.service`
+- **View Logs:** `journalctl -u pdftextify.service -f`
+- **Stop/Start:** `sudo systemctl stop/start pdftextify.service`
+
+### Using Gunicorn
 ```bash
-brew install ocrmypdf tesseract tesseract-lang
-pip install -r requirements.txt
+# Install production dependencies
+pip install gunicorn
+
+# Run with Gunicorn
+gunicorn app:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:1100
 ```
 
-### Docker (Coming Soon)
-```bash
-docker run -p 1100:1100 pdftextify/app
-```
+---
 
 ## 💡 Usage
 
@@ -130,181 +136,63 @@ curl -X POST "http://localhost:1100/ocrpdf/" \
      --output searchable_document.pdf
 ```
 
-#### Python Example
-```python
-import requests
-
-url = "http://localhost:1100/ocrpdf/"
-files = {"file": open("document.pdf", "rb")}
-response = requests.post(url, files=files)
-
-with open("searchable_document.pdf", "wb") as f:
-    f.write(response.content)
-```
-
-#### JavaScript Example
-```javascript
-const formData = new FormData();
-formData.append('file', fileInput.files[0]);
-
-fetch('/ocrpdf/', {
-    method: 'POST',
-    body: formData
-})
-.then(response => response.blob())
-.then(blob => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'processed.pdf';
-    a.click();
-});
-```
-
-## 📊 API Reference
-
-### Endpoints
-
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| `GET` | `/` | Web interface | HTML page |
-| `POST` | `/ocrpdf/` | Process PDF | Processed PDF file |
-| `GET` | `/ocrpdf/` | API info | JSON response |
-
-### Request Format
-- **Content-Type**: `multipart/form-data`
-- **Field Name**: `file`
-- **File Type**: PDF only
-- **Max Size**: 50MB
-
-### Response Codes
-- `200` - Success
-- `400` - Invalid file format
-- `413` - File too large
-- `500` - Processing error
-
+---
 ## ⚙️ Configuration
 
-### Environment Variables
-```bash
-export PDFTEXTIFY_HOST=0.0.0.0
-export PDFTEXTIFY_PORT=1100
-export PDFTEXTIFY_MAX_FILE_SIZE=52428800  # 50MB
+### Directory Structure
+
+```
+pdftextify/
+├── app.py
+├── logs/
+├── pdfs/
+├── src/
+│   └── pdftextify/
+│       ├── __init__.py
+│       ├── main.py
+│       └── static/
+├── tests/
+├── tools/
+└── README.md, LICENSE, ...
 ```
 
-### CORS Settings
-Edit `main.py` to configure allowed origins:
-```python
-allow_origins=[
-    "http://localhost:1100",
-    "http://127.0.0.1:1100",
-    "https://yourdomain.com",  # Add your domain
-]
-```
+ * `app.py` – Entry point that bootstraps the package in `src/`.
+ * `logs/` – Runtime log output (created automatically).
+ * `pdfs/` – (Future use) Storage for raw and final PDFs.
+ * `src/pdftextify/` – The main application package (FastAPI app, static files, etc.).
+ * `tests/` - Unit and integration tests (contains sample `test.pdf`).
+ * `tools/` - Additional tools used by the project.
+ * `cache/`, `temp/` – Generated artefacts; safe to purge when not running.
 
-## 🧪 Testing
-
-Run the test suite:
-```bash
-python -m pytest tests/ -v
-```
-
-Load testing:
-```bash
-pip install locust
-locust -f tests/load_test.py
-```
-
-## 🚀 Deployment
-
-### Production Setup
-```bash
-# Install production dependencies
-pip install gunicorn
-
-# Run with Gunicorn
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:1100
-```
-
-### Nginx Configuration
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-
-    client_max_body_size 50M;
-
-    location / {
-        proxy_pass http://127.0.0.1:1100;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
+---
 
 ## 🤝 Contributing
 
 We welcome contributions! Here's how you can help:
 
 ### 🐛 Bug Reports
-Found a bug? [Open an issue](https://github.com/imrosyd/PDFTextify/issues) with:
-- Description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- System information
+Found a bug? [Open an issue](https://github.com/imrosyd/PDFTextify/issues) with a clear description, steps to reproduce, and environment details.
 
 ### 💡 Feature Requests
 Have an idea? [Start a discussion](https://github.com/imrosyd/PDFTextify/discussions) or [open an issue](https://github.com/imrosyd/PDFTextify/issues).
 
 ### 🔧 Development
-```bash
-git clone https://github.com/imrosyd/PDFTextify.git
-cd PDFTextify
-pip install -r requirements.txt
-# Make your changes
-# Test your changes
-# Submit a pull request
-```
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. ✅ Commit your changes (`git commit -m 'Add amazing feature'`)
+4. 🚀 Push to the branch (`git push origin feature/amazing-feature`)
+5. 📫 Open a Pull Request
 
-## 📈 Roadmap
-
-- [ ] 🐳 **Docker Support** - Easy containerized deployment
-- [ ] 🌍 **Multi-language OCR** - Support for more languages
-- [ ] 📊 **Batch Processing** - Handle multiple files
-- [ ] 🔄 **Queue System** - Background job processing
-- [ ] 📱 **Mobile App** - iOS and Android support
-- [ ] 🤖 **AI Enhancement** - ML-powered text recognition
-- [ ] 📧 **Email Integration** - Send results via email
-- [ ] ☁️ **Cloud Storage** - S3, Google Drive integration
-
-## 📞 Support
-
-<div align="center">
-
-### Need Help?
-
-[![GitHub Issues](https://img.shields.io/badge/GitHub-Issues-red?style=for-the-badge&logo=github)](https://github.com/imrosyd/PDFTextify/issues)
-[![Discussions](https://img.shields.io/badge/GitHub-Discussions-blue?style=for-the-badge&logo=github)](https://github.com/imrosyd/PDFTextify/discussions)
-
-### Connect with the Developer
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-imrosyd-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/imrosyd)
-[![Instagram](https://img.shields.io/badge/Instagram-imrosyd-E4405F?style=for-the-badge&logo=instagram)](https://www.instagram.com/imrosyd)
-
-</div>
+---
 
 ## 📄 License
 
 This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
 
-<div align="center">
-
 ---
 
-### ⭐ Star this repo if PDFTextify helped you!
+## 🙏 Acknowledgments
 
-**Made with ❤️ by [imrosyd](https://github.com/imrosyd)**
-
-*Transform your PDFs today with PDFTextify!*
-
-</div>
+ * 🔍 OCRmyPDF: For excellent OCR processing capabilities
+ * 🐍 FastAPI: For the robust web framework
+ * 🎨 Tesseract: For reliable text recognition
